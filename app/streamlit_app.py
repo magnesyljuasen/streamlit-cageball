@@ -69,6 +69,7 @@ def embed_url(url, height=600):
 st.set_page_config(
     layout='wide', 
     initial_sidebar_state='expanded',
+    page_title="Fantasy Cageball",
     )
 
 with open("src/styles/main.css") as f:
