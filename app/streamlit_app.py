@@ -2,25 +2,53 @@ import streamlit as st
 import streamlit.components.v1 as components
 import pandas as pd
 from datetime import datetime
+import plotly.express as px
+
+def show_scoreboard(df):
+    fig = px.bar(
+        df, 
+        x=df.index, 
+        y='Poeng', 
+        color_discrete_sequence=['#1d3c34']
+        )
+    fig.update_layout(
+        xaxis_tickangle=-45,
+        margin=dict(l=50,r=50,b=10,t=10,pad=0),
+        yaxis=dict(dtick=1, title="Poeng"),
+        height=250
+        )
+    st.plotly_chart(fig, use_container_width=True, config = {'displayModeBar': False, 'staticPlot': True})
+
+
+def get_scoreboard(df):
+    df = df.set_index('-')
+    df['Poeng'] = df.sum(axis=1)
+    df = df['Poeng']
+    df_sorted = df.sort_values(ascending=False)
+    return df_sorted
+    
+
+def analyze_dfs(df1, df2):
+    for index, row in df2.iterrows():
+        date_column = row.index[1]  # Assuming the date is in the first column after the index
+        winner = row[date_column]        
+        if winner == 'Lag 1':
+            df1[date_column] = df1[date_column].replace('Lag 1', 1)
+            df1[date_column] = df1[date_column].replace('Lag 2', 0)
+        elif winner == 'Lag 2':
+            df1[date_column] = df1[date_column].replace('Lag 2', 1)
+            df1[date_column] = df1[date_column].replace('Lag 1', 0)
+    return df1
 
 def find_cageball_date(df_participants):
     data = df_participants.columns[1:]
-
-    # Create a Pandas Series
     date_series = pd.Series(pd.to_datetime(data))
-
-    # Get today's date
     today = pd.to_datetime(datetime.now().date())
-
-    # Check if today's date is in the series
     if today in date_series.values:
         next_date = today
     else:
-        # Find the next date if today's date is not in the series
         next_date = date_series[date_series >= today].min()
-
     return today, next_date
-
 
 @st.cache_resource(show_spinner=False)
 def read_excel():
@@ -29,13 +57,19 @@ def read_excel():
     return df_participants, df_winner
 
 def embed_url(url, height=600):
-    #height_string = f"{height}px"
     iframe_html = f"""
     <iframe src="{url}" width="100%" height="{height}px" style="border:none;"></iframe>
     """
     components.html(iframe_html, height=height)
 
-st.set_page_config(layout='wide', initial_sidebar_state='expanded')
+#--
+# Start app
+#--
+
+st.set_page_config(
+    layout='wide', 
+    initial_sidebar_state='expanded',
+    )
 
 with open("src/styles/main.css") as f:
     st.markdown("<style>{}</style>".format(f.read()), unsafe_allow_html=True)
@@ -45,23 +79,41 @@ sidebar_logo = "src/img/av-logo-1.png"
 
 st.logo(sidebar_logo, icon_image=main_body_logo)
 
+st.title('Fantasy Cageball')
 
-st.title('Fantasy Cageball - Asplan Viak FC ')
-todays_date = datetime.now().strftime("%Y-%m-%d")
+tab1, tab2, tab3, tab4 = st.tabs(['Påmelding', 'Resultattavle', 'Data', 'Hvem heier du på?'])
+with tab1:
+    doodle_link = "https://doodle.com/meeting/organize/id/aMojxY1d"
+    st.markdown(f"[Trykk her for påmelding (doodle)]({doodle_link})")
 
-doodle_link = "https://doodle.com/meeting/organize/id/aMojxY1d"
-st.markdown(f"[⚽ Trykk her for påmelding (doodle)]({doodle_link})")
+    st.image("src/img/asplanviak_1.jpg", use_column_width=True)
 
-df_participants, df_winner = read_excel()
-today, next_date = find_cageball_date(df_participants)
+with tab2:
+    df_participants, df_winner = read_excel()
+    df_results = analyze_dfs(df1=df_participants, df2=df_winner)
+    today, next_date = find_cageball_date(df_participants)
+    df_scoreboard = get_scoreboard(df_results)
+    show_scoreboard(df_scoreboard.head(8))
+    st.success(f'Mest verdifulle spiller = {df_scoreboard.head(1).index[0]}', icon='🏅')
+    
+with tab3:
+    st.dataframe(df_participants, use_container_width=True, height=400)
+    st.dataframe(df_winner, use_container_width=True)
 
-st.header('Historikk')
-st.dataframe(df_participants, use_container_width=True, height=150)
-st.dataframe(df_winner, use_container_width=True)
+with tab4:
+    cheering = st.selectbox('Hvem heier du på?', options=df_scoreboard.index.values, index=None, placeholder='Velg en fotballspiller...')
+    if cheering == 'Magne':
+        st.success('Riktig svar!')
+        st.balloons()
+    elif cheering == None:
+        pass
+    else:
+        st.warning('Velg en annen...')
 
-st.header('')
 
-st.image("src/img/asplanviak_1.jpg", use_column_width=True)
+
+
+
 
 
 
