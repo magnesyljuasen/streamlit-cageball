@@ -114,9 +114,9 @@ if selected_page == 'Påmelding':
                 " href="{doodle_link}">Meld deg på her!</a>''', unsafe_allow_html=True)
     c1, c2 = st.columns(2)
     with c1:
-        st.image('src/img/asplanviak_1.jpg', use_column_width=True)
+        st.image('src/img/messi.jpg', use_column_width=True)
     with c2:
-        st.image('src/img/asplanviak_2.jpg', use_column_width=True)
+        st.image('src/img/ronaldo.jpg', use_column_width=True)
 
 
 if selected_page == 'Poengtavle':
